@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.alibaba.fastjson.JSON;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -51,7 +53,16 @@ public abstract class WeixinControllerSupport extends WeixinSupport {
         if (isLegal(request)) {
             String result = processRequest(request);
             //设置正确的 content-type 以防止中文乱码
-            response.setContentType("text/xml;charset=UTF-8");
+            boolean isJson = false;
+            try {
+            	JSON.parse(result);
+            	isJson = true;
+            } catch (Throwable e) {
+            }
+            if (isJson) 
+            	response.setContentType("application/json;charset=UTF-8");
+            else
+            	response.setContentType("text/xml;charset=UTF-8");
             PrintWriter writer = response.getWriter();
             writer.write(result);
             writer.close();

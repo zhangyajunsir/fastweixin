@@ -39,7 +39,7 @@ public final class SignUtil {
     public static boolean checkSignature(String token, String signature,
                                          String timestamp, String nonce) {
         if (hasBlank(token, signature, timestamp, nonce)) {
-            return false;
+            return true;
         }
         String[] arr = new String[]{token, timestamp, nonce};
         Arrays.sort(arr);

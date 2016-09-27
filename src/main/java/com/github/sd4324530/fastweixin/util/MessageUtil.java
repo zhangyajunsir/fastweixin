@@ -37,6 +37,45 @@ public final class MessageUtil {
      */
     private MessageUtil() {
     }
+    
+    public static Map<String, Object> parseJson(HttpServletRequest request, String token, String appId, String aesKey) {
+    	InputStream inputStream = null;
+    	try {
+    		inputStream = request.getInputStream();
+    		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            StreamUtil.copy(inputStream, outputStream);
+            String body = outputStream.toString();
+            LOG.debug("收到的JSON消息:{}", body);
+            if (StrUtil.isNotBlank(aesKey)) {
+            	WXBizMsgCrypt pc = new WXBizMsgCrypt(token, aesKey, appId);
+                String msgSignature = request.getParameter("msg_signature");
+                String timeStamp = request.getParameter("timestamp");
+                String nonce = request.getParameter("nonce");
+                LOG.debug("msgSignature:{}", msgSignature);
+                LOG.debug("timeStamp:{}", timeStamp);
+                LOG.debug("nonce:{}", nonce);
+                String encrypt = (String)JSONUtil.toMap(body).get("encrypt");
+                String fromXML = String.format(FORMAT, encrypt);
+                String message = pc.decryptMsg(msgSignature, timeStamp, nonce, fromXML);
+                LOG.debug("收到的JSON解密后消息:{}", message);
+                return JSONUtil.toMap(message);
+            } else
+            	return JSONUtil.toMap(body);
+    	} catch (IOException e) {
+            LOG.error("IO出现异常", e);
+        } catch (Exception e) {
+            LOG.error("其他异常", e);
+        } finally {
+            try {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            } catch (IOException e) {
+                LOG.error("IO出现异常", e);
+            }
+        }
+		return null;
+    }
 
     /**
      * 解析从微信服务器来的请求，将消息或者事件返回出去

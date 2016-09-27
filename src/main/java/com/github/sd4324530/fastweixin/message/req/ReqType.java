@@ -10,6 +10,8 @@ public final class ReqType {
     public static final String VIDEO       = "video";
     public static final String SHORT_VIDEO = "shortvideo";
     public static final String EVENT       = "event";
+    public static final String DEVICE_EVENT= "device_event";
+    public static final String DEVICE_TEXT = "device_text";
 
     private ReqType() {
     }

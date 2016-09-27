@@ -125,7 +125,7 @@ public abstract class WeixinSupport {
 
         BaseMsg msg = null;
 
-        if (msgType.equals(ReqType.EVENT)) {
+        if (msgType.equals(ReqType.EVENT) || msgType.equals(ReqType.DEVICE_EVENT)) {
             String eventType = (String) reqMap.get("Event");
             String ticket = (String) reqMap.get("Ticket");
             QrCodeEvent qrCodeEvent = null;
@@ -220,7 +220,7 @@ public abstract class WeixinSupport {
                 if (isNull(msg)) {
                     msg = processEventHandle(event);
                 }
-            }else if(EventType.MASSSENDJOBFINISH.equals(eventType)){
+            } else if (EventType.MASSSENDJOBFINISH.equals(eventType)){
                 String msgId=(String)reqMap.get("MsgID");
                 String status=(String)reqMap.get("Status");
                 Integer TotalCount=Integer.valueOf(String.valueOf(reqMap.get("TotalCount")));
@@ -232,6 +232,19 @@ public abstract class WeixinSupport {
                 msg=callBackAllMessage(event);
                 if (isNull(msg)) {
                     msg = processEventHandle(event);
+                }
+            } else if (EventType.BIND.equals(eventType) || EventType.UNBIND.equals(eventType)) {
+            	DeviceEvent deviceEvent = new DeviceEvent();
+            	deviceEvent.setContent((String)reqMap.get("Content"));
+            	deviceEvent.setDeviceID((String)reqMap.get("DeviceID"));
+            	deviceEvent.setDeviceType((String)reqMap.get("DeviceType"));
+            	deviceEvent.setSessionId((String)reqMap.get("SessionID"));
+            	deviceEvent.setOpenId((String)reqMap.get("OpenID"));
+            	deviceEvent.setMsgId((String)reqMap.get("MsgId"));
+            	buildBasicEvent(reqMap, deviceEvent);
+            	msg = handleDeviceEvent(deviceEvent);
+            	if (isNull(msg)) {
+                    msg = processEventHandle(deviceEvent);
                 }
             }
         } else {
@@ -305,6 +318,18 @@ public abstract class WeixinSupport {
                 if (isNull(msg)) {
                     msg = processMessageHandle(linkReqMsg);
                 }
+            } else if (msgType.equals(ReqType.DEVICE_TEXT)) {
+            	DeviceTextReqMsg deviceText = new DeviceTextReqMsg();
+            	deviceText.setContent((String)reqMap.get("Content"));
+            	deviceText.setDeviceID((String)reqMap.get("DeviceID"));
+            	deviceText.setDeviceType((String)reqMap.get("DeviceType"));
+            	deviceText.setSessionId((String)reqMap.get("SessionID"));
+            	deviceText.setOpenId((String)reqMap.get("OpenID"));
+            	buildBasicReqMsg(reqMap, deviceText);
+            	msg = handleDeviceText(deviceText);
+            	if (isNull(msg)) {
+                    msg = processMessageHandle(deviceText);
+                }
             }
         }
         String result = "";
@@ -323,6 +348,62 @@ public abstract class WeixinSupport {
             }
         }
         return result;
+    }
+    
+    /**
+     * 处理微信硬件服务器发来的请求方法
+     *
+     * @param request http请求对象
+     * @return 处理消息的结果，已经是接口要求的JSON报文了
+     */
+    public String processJsonRequest(HttpServletRequest request) {
+    	Map<String, Object> reqMap = MessageUtil.parseJson(request, getToken(), getAppId(), getAESKey());
+    	String msgType = (String) reqMap.get("msg_type");
+    	LOG.debug("收到消息,消息类型:{}", msgType);
+    	BaseMsg msg = null;
+    	if (msgType.equals(ReqType.DEVICE_TEXT)) {
+        	DeviceTextReqMsg deviceText = new DeviceTextReqMsg();
+        	deviceText.setContent((String)reqMap.get("content"));
+        	deviceText.setDeviceID((String)reqMap.get("device_id"));
+        	deviceText.setDeviceType((String)reqMap.get("device_type"));
+        	deviceText.setSessionId((String)reqMap.get("session_id"));
+        	deviceText.setOpenId((String)reqMap.get("open_id"));
+        	deviceText.setMsgId((String)reqMap.get("msg_id"));
+        	deviceText.setCreateTime(Long.valueOf((String)reqMap.get("create_time")));
+        	msg = handleDeviceText(deviceText);
+        	if (isNull(msg)) {
+                msg = processMessageHandle(deviceText);
+            }
+        } else if (msgType.equals(EventType.BIND) || msgType.equals(EventType.UNBIND)) {
+        	DeviceEvent deviceEvent = new DeviceEvent();
+        	deviceEvent.setContent((String)reqMap.get("content"));
+        	deviceEvent.setDeviceID((String)reqMap.get("device_id"));
+        	deviceEvent.setDeviceType((String)reqMap.get("device_type"));
+        	deviceEvent.setSessionId((String)reqMap.get("session_id"));
+        	deviceEvent.setOpenId((String)reqMap.get("open_id"));
+        	deviceEvent.setMsgId((String)reqMap.get("msg_id"));
+        	deviceEvent.setQrcodeSuffixData((String)reqMap.get("qrcode_suffix_data"));
+        	deviceEvent.setEvent(msgType);
+        	msg = handleDeviceEvent(deviceEvent);
+        	if (isNull(msg)) {
+                msg = processEventHandle(deviceEvent);
+            }
+        }
+    	
+    	String result = "{}";
+    	if (nonNull(msg)) {
+            result = msg.toJson();
+            if (StrUtil.isNotBlank(getAESKey())) {
+                try {
+                    WXBizMsgCrypt pc = new WXBizMsgCrypt(getToken(), getAESKey(), getAppId());
+                    result = String.format("{\"encrypt\":\"%1$s\"}", pc.encrypt(pc.getRandomStr(), result));
+                    LOG.debug("加密后密文:{}", result);
+                } catch (AesException e) {
+                    LOG.error("加密异常", e);
+                }
+            }
+        }
+    	return result;
     }
 
     private BaseMsg processMessageHandle(BaseReqMsg msg) {
@@ -533,7 +614,29 @@ public abstract class WeixinSupport {
      * @param event 群发回调方法
      * @return 响应消息对象
      */
-    protected  BaseMsg callBackAllMessage(SendMessageEvent event){return  handleDefaultEvent(event);}
+    protected BaseMsg callBackAllMessage(SendMessageEvent event){
+    	return  handleDefaultEvent(event);
+    }
+    
+    /**
+     * 处理设备事件
+     *
+     * @param event 设备事件
+     * @return 响应消息对象
+     */
+    protected BaseMsg handleDeviceEvent(DeviceEvent event) {
+    	return  handleDefaultEvent(event);
+    }
+    
+    /**
+     * 处理设备消息，有需要时子类重写
+     *
+     * @param msg 请求消息对象
+     * @return 响应消息对象
+     */
+    protected BaseMsg handleDeviceText(DeviceTextReqMsg deviceText) {
+    	return  handleDefaultMsg(deviceText);
+    }
 
     /**
      * 处理取消关注事件，有需要时子类重写
@@ -553,7 +656,7 @@ public abstract class WeixinSupport {
         return null;
     }
 
-    private void buildBasicReqMsg(Map<String, Object> reqMap, BaseReqMsg reqMsg) {
+    protected void buildBasicReqMsg(Map<String, Object> reqMap, BaseReqMsg reqMsg) {
         addBasicReqParams(reqMap, reqMsg);
         reqMsg.setMsgId((String) reqMap.get("MsgId"));
     }

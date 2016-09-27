@@ -16,6 +16,8 @@ public final class EventType {
     public static final String LOCATIONSELECT  = "location_select";
     public static final String TEMPLATESENDJOBFINISH  = "TEMPLATESENDJOBFINISH";
     public static final String MASSSENDJOBFINISH="MASSSENDJOBFINISH";
+    public static final String BIND            = "bind";
+    public static final String UNBIND          = "unbind";
 
     private EventType() {
     }

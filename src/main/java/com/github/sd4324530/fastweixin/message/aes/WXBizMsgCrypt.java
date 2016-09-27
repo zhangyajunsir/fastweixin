@@ -84,7 +84,7 @@ public class WXBizMsgCrypt {
     }
 
     // 随机生成16位字符串
-    String getRandomStr() {
+    public String getRandomStr() {
         String base = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         Random random = new Random();
         StringBuffer sb = new StringBuffer();
@@ -102,7 +102,7 @@ public class WXBizMsgCrypt {
      * @return 加密后base64编码的字符串
      * @throws AesException aes加密失败
      */
-    String encrypt(String randomStr, String text) throws AesException {
+    public String encrypt(String randomStr, String text) throws AesException {
         ByteGroup byteCollector = new ByteGroup();
         byte[] randomStrBytes = randomStr.getBytes(CHARSET);
         byte[] textBytes = text.getBytes(CHARSET);
@@ -205,6 +205,7 @@ public class WXBizMsgCrypt {
      * @param replyMsg  公众平台待回复用户的消息，xml格式的字符串
      * @param timeStamp 时间戳，可以自己生成，也可以用URL参数的timestamp
      * @param nonce     随机串，可以自己生成，也可以用URL参数的nonce
+     * @param isJson    是否为Json
      * @return 加密后的可以直接回复用户的密文，包括msg_signature, timestamp, nonce, encrypt的xml格式的字符串
      * @throws AesException 执行失败，请查看该异常的错误码和具体的错误信息
      */
@@ -218,7 +219,7 @@ public class WXBizMsgCrypt {
         }
 
         String signature = SHA1.getSHA1(token, timeStamp, nonce, encrypt);
-
+        
         // System.out.println("发送给平台的签名是: " + signature[1].toString());
         // 生成发送的xml
         String result = XMLParse.generate(encrypt, signature, timeStamp, nonce);

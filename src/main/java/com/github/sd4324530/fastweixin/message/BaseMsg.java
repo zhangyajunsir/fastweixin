@@ -1,12 +1,16 @@
 package com.github.sd4324530.fastweixin.message;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.alibaba.fastjson.JSON;
 import com.github.sd4324530.fastweixin.message.util.MessageBuilder;
 
-import java.io.Serializable;
-
 public class BaseMsg implements Serializable{
-
-    private String toUserName;
+	private static final long serialVersionUID = -2977152695041828121L;
+	
+	private String toUserName;
     private String fromUserName;
     private long   createTime;
     private String msgType;
@@ -60,5 +64,12 @@ public class BaseMsg implements Serializable{
     public String toString() {
         return toXml();
     }
-
+    
+    public String toJson() {
+    	Map<String, Object> map = new HashMap<String, Object>();
+    	map.put("to_user_name", getToUserName());
+    	map.put("from_user_name", getFromUserName());
+    	map.put("creat_time", String.valueOf(System.currentTimeMillis()).substring(0, 10));
+    	return JSON.toJSONString(map);
+    }
 }
