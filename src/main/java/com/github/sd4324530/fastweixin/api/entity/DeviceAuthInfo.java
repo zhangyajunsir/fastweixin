@@ -33,8 +33,8 @@ public class DeviceAuthInfo extends BaseModel {
 	@JSONField(name = "manu_mac_pos")
 	private Integer manuMacPos;
 	//（wifi无效）表示mac地址在厂商serial number里含有mac地址的偏移，取值如下： -1：表示在尾部 -2：表示不包含mac地址 其他：非法偏移
-	@JSONField(name = "serMacPos")
-	private Integer ser_mac_pos;
+	@JSONField(name = "ser_mac_pos")
+	private Integer serMacPos;
 	//（wifi无效）精简协议类型，取值如下：计步设备精简协议：1 （若该字段填1，connect_protocol 必须包括3。非精简协议设备切勿填写该字段）
 	@JSONField(name = "ble_simple_protocol")
 	private Integer bleSimpleProtocol;
@@ -93,11 +93,11 @@ public class DeviceAuthInfo extends BaseModel {
 	public void setManuMacPos(Integer manuMacPos) {
 		this.manuMacPos = manuMacPos;
 	}
-	public Integer getSer_mac_pos() {
-		return ser_mac_pos;
+	public Integer getSerMacPos() {
+		return serMacPos;
 	}
-	public void setSer_mac_pos(Integer ser_mac_pos) {
-		this.ser_mac_pos = ser_mac_pos;
+	public void setSerMacPos(Integer serMacPos) {
+		this.serMacPos = serMacPos;
 	}
 	public Integer getBleSimpleProtocol() {
 		return bleSimpleProtocol;
